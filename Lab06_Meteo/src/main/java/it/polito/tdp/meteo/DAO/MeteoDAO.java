@@ -7,6 +7,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+import it.polito.tdp.meteo.model.Citta;
 import it.polito.tdp.meteo.model.Rilevamento;
 
 public class MeteoDAO {
@@ -59,6 +60,24 @@ public class MeteoDAO {
 		return ris;
 	}
 
+	public List<Citta> getAllCitta() {
+		String sql= "SELECT DISTINCT Localita FROM situazione";
+		List<Citta> citta= new ArrayList<Citta>();
+		try {
+			Connection conn = ConnectDB.getConnection();
+			PreparedStatement st= conn.prepareStatement(sql);
+			ResultSet rs= st.executeQuery();
+			while (rs.next()) {
+				Citta c= new Citta(rs.getString("Localita"));
+				citta.add(c);
+			}
+			conn.close();
+			return citta;
+		}catch(SQLException e) {
+			throw new RuntimeException("Errore DB",e);
+		}
+	}
+	
 	public String getUmiditaMediaMese (int mese) {
 		String sql= "SELECT Localita, AVG(Umidita) AS media "
 				+ "FROM situazione "
