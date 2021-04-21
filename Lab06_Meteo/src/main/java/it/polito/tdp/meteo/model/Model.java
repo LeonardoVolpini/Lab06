@@ -21,7 +21,6 @@ public class Model {
 	
 	public Model() {
 		this.meteoDAO= new MeteoDAO();
-		this.costoSoluzMigliore=0;
 		this.giorniCons=1;
 		trovato=true;
 		this.soluzioneFinale= new ArrayList<>();
@@ -35,13 +34,9 @@ public class Model {
 	// of course you can change the String output with what you think works best
 	public String trovaSequenza(int mese) {
 		List<Citta> citta= this.meteoDAO.getAllCitta();
-		//Map<Citta,List<Rilevamento>> rilevamenti= new HashMap<>();
-		//Map<Citta,Integer> giorniCitta= new HashMap<>();
 		for (Citta c : citta) {
 			List<Rilevamento> rilev= new ArrayList<Rilevamento>(this.meteoDAO.getAllRilevamentiLocalitaMese(mese, c.getNome()));
 			c.setRilevamenti(rilev);
-			//rilevamenti.put(c,rilev);
-			//giorniCitta.put(c, 0);
 		}
 		List<Citta> parziale = new ArrayList<Citta>();
 		ricorsione(citta,parziale);
@@ -52,21 +47,21 @@ public class Model {
 	private void ricorsione(List<Citta> citta, List<Citta> parziale) {
 		if (parziale.size()==(this.NUMERO_GIORNI_TOTALI)) { //terminale
 			//CHECK SE E' PREZZO MIGLIORE
-			if (trovato) { //prima esecuzione
+			if (trovato) { //prima soluzione
 				this.soluzioneFinale.addAll(parziale);
 				this.costoSoluzMigliore=this.costoSoluzione(soluzioneFinale);
 				trovato=false;
 			} else {
 				if (this.costoSoluzione(parziale)<this.costoSoluzMigliore) {
-					this.costoSoluzMigliore=this.costoSoluzione(parziale);
 					this.soluzioneFinale.clear();
 					this.soluzioneFinale.addAll(parziale);
+					this.costoSoluzMigliore=this.costoSoluzione(this.soluzioneFinale);
 				}
 			}
 		} 
 		else {
 			for (Citta c : citta) {
-				if (isValid(parziale,c,citta)) { //+giorniCitta
+				if (isValid(parziale,c,citta)) {
 					parziale.add(c);
 					c.increaseCounter();
 					ricorsione(citta,parziale);
