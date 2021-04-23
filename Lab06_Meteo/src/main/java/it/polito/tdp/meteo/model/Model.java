@@ -35,8 +35,7 @@ public class Model {
 	public String trovaSequenza(int mese) {
 		List<Citta> citta= this.meteoDAO.getAllCitta();
 		for (Citta c : citta) {
-			List<Rilevamento> rilev= new ArrayList<Rilevamento>(this.meteoDAO.getAllRilevamentiLocalitaMese(mese, c.getNome()));
-			c.setRilevamenti(rilev);
+			c.setRilevamenti(this.meteoDAO.getAllRilevamentiLocalitaMese(mese, c.getNome()));
 		}
 		List<Citta> parziale = new ArrayList<Citta>();
 		ricorsione(citta,parziale);
@@ -75,6 +74,9 @@ public class Model {
 	}
 	
 	private boolean isValid(List<Citta>parziale, Citta city, List<Citta> citta) {
+		if(parziale.size()==0)
+			return true;
+		
 		city.increaseCounter();
 		//NESSUNA CITTA CON PIU DI 6 GIORNI
 		for (Citta c : citta) {
@@ -93,7 +95,7 @@ public class Model {
 				}
 			}
 		}
-		
+
 		//CHECK SUI GIORNI MINIMI CONSECUTIVI
 		if (!parziale.isEmpty())
 			if (city.equals(parziale.get(parziale.size()-1))) 
