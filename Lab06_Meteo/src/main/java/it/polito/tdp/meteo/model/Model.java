@@ -15,17 +15,18 @@ public class Model {
 	private final static int NUMERO_GIORNI_TOTALI = 15;
 	private MeteoDAO meteoDAO;
 	private List<Citta> soluzioneFinale;
-	private float costoSoluzMigliore;
-	private int giorniCons;
-	private boolean trovato;
+	private List<Citta> citta;
+	private double costoSoluz;
 	
 	public Model() {
 		this.meteoDAO= new MeteoDAO();
-		this.giorniCons=1;
-		trovato=true;
-		this.soluzioneFinale= new ArrayList<>();
+		citta= this.meteoDAO.getAllCitta();
 	}
 
+	public List<Citta> getAllCitta(){
+		return this.citta;
+	}
+	
 	// of course you can change the String output with what you think works best
 	public String getUmiditaMedia(int mese) {
 		return this.meteoDAO.getUmiditaMediaMese(mese);
@@ -33,60 +34,63 @@ public class Model {
 	
 	// of course you can change the String output with what you think works best
 	public String trovaSequenza(int mese) {
-		List<Citta> citta= this.meteoDAO.getAllCitta();
+		this.soluzioneFinale=null;
 		for (Citta c : citta) {
 			c.setRilevamenti(this.meteoDAO.getAllRilevamentiLocalitaMese(mese, c.getNome()));
 		}
 		List<Citta> parziale = new ArrayList<Citta>();
-		ricorsione(citta,parziale);
+		ricorsione(parziale,0);
 		String ris= this.SoluzStringa(soluzioneFinale);
 		return ris;
 	}
 	
-	private void ricorsione(List<Citta> citta, List<Citta> parziale) {
-		if (parziale.size()==(this.NUMERO_GIORNI_TOTALI)) { //terminale
+	private void ricorsione(List<Citta> parziale, int livello) {
+		if (livello==NUMERO_GIORNI_TOTALI) { //terminale
 			//CHECK SE E' PREZZO MIGLIORE
-			if (trovato) { //prima soluzione
-				this.soluzioneFinale.addAll(parziale);
-				this.costoSoluzMigliore=this.costoSoluzione(soluzioneFinale);
-				trovato=false;
-			} else {
-				if (this.costoSoluzione(parziale)<this.costoSoluzMigliore) {
-					this.soluzioneFinale.clear();
-					this.soluzioneFinale.addAll(parziale);
-					this.costoSoluzMigliore=this.costoSoluzione(this.soluzioneFinale);
-				}
+			double costo= this.costoSoluzione(parziale);
+			if (this.soluzioneFinale==null || costo<this.costoSoluzione(soluzioneFinale)) { //null per il primo caso
+				System.out.format("%f %s\n", costo, parziale);
+				this.soluzioneFinale=new ArrayList<Citta>(parziale);
+				this.costoSoluz=this.costoSoluzione(soluzioneFinale);
 			}
 		} 
 		else {
 			for (Citta c : citta) {
-				if (isValid(parziale,c,citta)) {
+				if (isValid(parziale,c)) {
 					parziale.add(c);
-					c.increaseCounter();
-					ricorsione(citta,parziale);
+					//c.increaseCounter();
+					ricorsione(parziale,livello+1);
 					
 					//BACKTRACKING
 					parziale.remove(parziale.size()-1);
-					c.decreaseCounter();
+					//c.decreaseCounter();
 					}
 				}
 		}
 	}
 	
-	private boolean isValid(List<Citta>parziale, Citta city, List<Citta> citta) {
-		if(parziale.size()==0)
-			return true;
-		
-		city.increaseCounter();
+	private boolean isValid(List<Citta>parziale, Citta city) {
 		//NESSUNA CITTA CON PIU DI 6 GIORNI
-		for (Citta c : citta) {
-			if (c.getCounter()>NUMERO_GIORNI_CITTA_MAX) {
-				c.decreaseCounter();
-				return false;
-			}	
-		}
+		int count=0;
+		for (Citta c : parziale) {
+			if(c.equals(city))
+				count++;
+			}
+		if (count>=NUMERO_GIORNI_CITTA_MAX)
+			return false;
 		
-		//TUTTE LE CITTA PRESENTI NELLA SOLUZIONE
+		if(parziale.size()==0)
+			return true; //primo giorno va sempre bene qualsiasi citta
+		
+		if (parziale.size()==1 || parziale.size()==2)
+			return parziale.get(parziale.size()-1).equals(city); //nel secondo e terzo giorno va bene solo se stessa citta del precedente
+		
+		
+		
+		if (parziale.get(parziale.size()-1).equals(city))
+			return true; //posso rimanere nella citta uguale alla precedente. Rispetto gia il vincolo di 6 gg max per citta
+		
+		/*//TUTTE LE CITTA PRESENTI NELLA SOLUZIONE
 		if (parziale.size()>=12) {
 			for (Citta c: citta) {
 				if (c.getCounter()==0) {
@@ -94,42 +98,25 @@ public class Model {
 					return false;
 				}
 			}
-		}
+		}*/
 
 		//CHECK SUI GIORNI MINIMI CONSECUTIVI
-		if (!parziale.isEmpty())
-			if (city.equals(parziale.get(parziale.size()-1))) 
-				giorniCons++;
-			else {
-				if (parziale.size()>2) {
-					if(!parziale.get(parziale.size()-1).equals(parziale.get(parziale.size()-2))) 
-						return false;
-					giorniCons=1;
-				} else
-					return false;
-			}
-		/*for (int i=0; i<parziale.size(); i++) {
-			if (i!=0) {
-				if (parziale.get(i).equals(parziale.get(i-1)))
-					this.giorniCons++;
-				else {
-					if (this.giorniCons<NUMERO_GIORNI_CITTA_CONSECUTIVI_MIN)
-						return false;
-					this.giorniCons=1;
-				}
-			}
-		}*/
+		if (parziale.get(parziale.size()-1).equals(parziale.get(parziale.size()-2))
+			&& parziale.get(parziale.size()-2).equals(parziale.get(parziale.size()-3)))
+			return true; //se cambio citta devo essere sicuro che le precedenti 3 siano uguali
 		
-		city.decreaseCounter();
-		return true;
+		return false;
 	}
 	
-	public float costoSoluzione (List<Citta> soluzione) {
-		float c =0;
-		for (int i=0; i<soluzione.size(); i++) {
-			if (i!=0 && soluzione.get(i).equals(soluzione.get(i-1)))
+	public Double costoSoluzione (List<Citta> soluzione) {
+		double c =0.0;
+		for (int i=1; i<=NUMERO_GIORNI_TOTALI; i++) {
+			Citta citta= soluzione.get(i-1);
+			c = c + (double)citta.getRilevamenti().get(i-1).getUmidita();
+		}
+		for (int i=2; i<=NUMERO_GIORNI_TOTALI; i++) {
+			if (soluzione.get(i-1).equals(soluzione.get(i-2)))
 				c+= COST;
-			c = c + soluzione.get(i).getRilevamenti().get(i).getUmidita();
 		}
 		return c;
 	}
@@ -141,7 +128,7 @@ public class Model {
 			s+= i+") "+c.getNome()+"\n";
 			i++;
 		}
-		s+="ed il costo totale e' di: "+this.costoSoluzMigliore+" euro";
+		s+="ed il costo totale e' di: "+this.costoSoluz+" euro";
 		return s;
 	}
 	
