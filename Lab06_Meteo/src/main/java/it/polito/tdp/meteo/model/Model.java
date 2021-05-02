@@ -36,15 +36,17 @@ public class Model {
 	public String trovaSequenza(int mese) {
 		this.soluzioneFinale=null;
 		for (Citta c : citta) {
-			c.setRilevamenti(this.meteoDAO.getAllRilevamentiLocalitaMese(mese, c.getNome()));
+			c.setRilevamenti(this.meteoDAO.getAllRilevamentiLocalitaMese(mese, c));
 		}
 		List<Citta> parziale = new ArrayList<Citta>();
 		ricorsione(parziale,0);
 		String ris= this.SoluzStringa(soluzioneFinale);
+		System.out.println("RICERCA MESE "+Integer.toString(mese));
 		return ris;
 	}
 	
 	private void ricorsione(List<Citta> parziale, int livello) {
+		
 		if (livello==NUMERO_GIORNI_TOTALI) { //terminale
 			//CHECK SE E' PREZZO MIGLIORE
 			double costo= this.costoSoluzione(parziale);
@@ -112,7 +114,8 @@ public class Model {
 		double c =0.0;
 		for (int i=1; i<=NUMERO_GIORNI_TOTALI; i++) {
 			Citta citta= soluzione.get(i-1);
-			c = c + (double)citta.getRilevamenti().get(i-1).getUmidita();
+			double umid= citta.getRilevamenti().get(i-1).getUmidita();
+			c = c + umid;
 		}
 		for (int i=2; i<=NUMERO_GIORNI_TOTALI; i++) {
 			if (soluzione.get(i-1).equals(soluzione.get(i-2)))

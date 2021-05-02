@@ -40,17 +40,17 @@ public class MeteoDAO {
 		}
 	}
 
-	public List<Rilevamento> getAllRilevamentiLocalitaMese(int mese, String localita) {
-		String sql = "SELECT Umidita, Data FROM situazione WHERE Localita=? AND MONTH(DATA)=? ORDER BY data ASC";
+	public List<Rilevamento> getAllRilevamentiLocalitaMese(int mese, Citta citta) {
+		String sql = "SELECT localita, umidita, data FROM situazione WHERE localita=? AND MONTH(data)=? ORDER BY data ASC";
 		List<Rilevamento> ris= new ArrayList<Rilevamento>();
 		try {
 			Connection conn= ConnectDB.getConnection();
 			PreparedStatement st= conn.prepareStatement(sql);
-			st.setString(1, localita);
-			st.setInt(2, mese);
+			st.setString(1, citta.getNome());
+			st.setString(2, Integer.toString(mese));
 			ResultSet rs= st.executeQuery();
 			while (rs.next()) {
-				Rilevamento r = new Rilevamento(localita,rs.getDate("Data"),rs.getInt("Umidita"));
+				Rilevamento r = new Rilevamento(rs.getString("localita"),rs.getDate("Data"),rs.getInt("Umidita"));
 				ris.add(r);
 			}
 			conn.close();
